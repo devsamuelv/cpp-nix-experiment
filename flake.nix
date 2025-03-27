@@ -23,6 +23,10 @@
           nativeBuildInputs = [
             pkgs.cmake
             pkgs.makeWrapper
+            (pkgs.opencv.override {
+              enableJPEG = true;
+              enableFfmpeg = true;
+            })
           ];
           buildPhase = ''
             mkdir -p build
@@ -40,6 +44,7 @@
             pkgs.cmake
             pkgs.gcc
             pkgs.clang
+            pkgs.opencv
           ];
         };
       }
