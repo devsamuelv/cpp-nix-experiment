@@ -4,7 +4,6 @@
   fetchzip,
   lib,
   fetchFromGitHub,
-  brotli,
   cmake,
 }:
 
@@ -20,9 +19,7 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ cmake ];
-  buildInputs = [
-    brotli
-  ];
+  buildInputs = [ ];
 
   # Instruct the build process to run tests.
   # The generic builder script of `mkDerivation` handles all the default
