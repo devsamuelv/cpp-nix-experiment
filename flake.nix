@@ -8,7 +8,11 @@
     };
   };
   outputs =
-    { nixpkgs, flake-utils, ... }:
+    {
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -23,6 +27,7 @@
           nativeBuildInputs = [
             pkgs.cmake
             pkgs.makeWrapper
+            pkgs.httplib
             (pkgs.opencv.override {
               enableJPEG = true;
               enableFfmpeg = true;
