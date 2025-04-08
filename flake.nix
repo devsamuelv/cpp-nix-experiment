@@ -47,6 +47,7 @@
             pkgs.gcc
             pkgs.clang
             pkgs.opencv
+            pkgs.gdb
           ];
         };
       }
