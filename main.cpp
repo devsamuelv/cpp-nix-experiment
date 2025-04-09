@@ -48,5 +48,7 @@ int main(int, char **)
                   return true; // return 'false' if you want to cancel the process.
                 }); });
 
+  std::cout << "Server running!" << std::endl;
+
   svr.listen("0.0.0.0", 8080);
 }
