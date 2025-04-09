@@ -21,10 +21,8 @@ int main(int, char **)
             cv::Mat frame;
             std::vector<uchar> buff;
 
-            res.set_header("content-type", "multipart/x-mixed-replace");
-
             res.set_chunked_content_provider(
-                "image/jpeg", // Content type
+                "multipart/x-mixed-replace; boundary=frame", // Content type
                 [&](size_t offset, httplib::DataSink &sink)
                 {
                   cv::Mat frame;
@@ -34,8 +32,13 @@ int main(int, char **)
                   if (hasFrame)
                   {
                     cv::imencode(".jpg", frame, buff);
+                    std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", buff.size()));
                     std::string payload(buff.begin(), buff.end());
+                    std::string end("\r\n");
+
+                    sink.write(preheader.data(), preheader.size());
                     sink.write(payload.data(), payload.size());
+                    sink.write(end.data(), end.size());
                     sink.os.flush();
                   }
                   return true; // return 'false' if you want to cancel the process.
