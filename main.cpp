@@ -8,7 +8,7 @@
 
 int main(int, char **)
 {
-  static cv::VideoCapture capture("/dev/video4", cv::CAP_V4L2);
+  static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
 
   capture.set(cv::CAP_PROP_EXPOSURE, 0);
   capture.set(cv::CAP_PROP_FRAME_WIDTH, 720);
