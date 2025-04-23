@@ -13,4 +13,12 @@ The libraries are added via nix packages housed inside the `libraries` folder. C
 
 ## Building & Running
 
-First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `nix run` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/camera`!
+First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `nix run` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/hi`!
+
+## Debugging
+
+I decided to use valgrind for memory debugging since its reliable and its been around for awhile. Use the command below to execute teleop-control with valgrind. Make sure you run `nix build` before using valgrind since it doesn't compile the binary by itself.
+
+```sh
+valgrind --leak-check=yes ./result/bin/teleop-control
+```
