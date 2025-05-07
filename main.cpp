@@ -5,26 +5,41 @@
 #include <httplib.h>
 #include <algorithm>
 #include <format>
+#include <mutex>
+#include <thread>
 
-void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<std::shared_ptr<std::vector<uchar>>> buff)
+class VideoManager
 {
-  while (true)
-  {
-    if (cap.get().isOpened())
-    {
-      cv::Mat frame;
-      bool containsImage = cap.get().read(frame);
+private:
+  std::mutex buffer_mutex;
+  std::shared_ptr<std::vector<uchar>> buffer = std::make_shared<std::vector<uchar>>();
 
-      if (containsImage)
-      {
-        cv::imencode(".jpg", frame, *buff.get());
-        std::cout << "Updating Frame" << std::endl;
-      }
-    }
+public:
+  void
+  update_buffer(cv::Mat mat)
+  {
+    std::lock_guard<std::mutex> lock(buffer_mutex);
+    cv::imencode(".jpg", mat, *buffer);
+  };
+
+  std::vector<uchar> get_buffer()
+  {
+    std::lock_guard<std::mutex> lock(buffer_mutex);
+    return *buffer.get();
+  };
+};
+
+void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<VideoManager> manager)
+{
+  while (cap.get().isOpened())
+  {
+    cv::Mat frame;
+    cap.get().read(frame);
+    manager.get().update_buffer(frame);
   }
 }
 
-size_t getSize(std::shared_ptr<std::vector<uchar>> a)
+size_t get_size(std::shared_ptr<std::vector<uchar>> a)
 {
   return (*a).size();
 }
@@ -32,16 +47,16 @@ size_t getSize(std::shared_ptr<std::vector<uchar>> a)
 int main(int, char **)
 {
   static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
-  static std::shared_ptr<std::vector<uchar>> cam_buff = std::make_shared<std::vector<uchar>>();
+  static VideoManager manager;
 
   capture.set(cv::CAP_PROP_EXPOSURE, 0);
   capture.set(cv::CAP_PROP_FRAME_WIDTH, 720);
   capture.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
 
-  std::jthread cameraThread(
+  std::thread cameraThread(
       camera_thread,
       std::ref(capture),
-      std::ref(cam_buff));
+      std::ref(manager));
 
   // HTTP
   httplib::Server svr;
@@ -51,9 +66,8 @@ int main(int, char **)
                 "multipart/x-mixed-replace; boundary=frame", // Content type
                 [&](size_t offset, httplib::DataSink &sink)
                 {
-                  std::vector<uchar> buff = *cam_buff;
-                  std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", buff.size()));
-                  std::string payload(buff.begin(), buff.end());
+                  std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", (manager.get_buffer()).size()));
+                  std::string payload((manager.get_buffer()).begin(), (manager.get_buffer()).end());
                   std::string end("\r\n");
 
                   sink.write(preheader.data(), preheader.size());
@@ -63,36 +77,8 @@ int main(int, char **)
                   return true; // return 'false' if you want to cancel the process.
                 }); });
 
-  // svr.Get("/camera", [](const httplib::Request &, httplib::Response &res)
-  //         {
-  //           cv::Mat frame;
-  //           std::vector<uchar> buff;
-
-  //           res.set_chunked_content_provider(
-  //               "multipart/x-mixed-replace; boundary=frame", // Content type
-  //               [&](size_t offset, httplib::DataSink &sink)
-  //               {
-  //                 cv::Mat frame;
-  //                 std::vector<uchar> buff;
-  //                 bool hasFrame = capture.read(frame);
-
-  //                 if (hasFrame)
-  //                 {
-  //                   cv::imencode(".jpg", frame, buff);
-  //                   std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", buff.size()));
-  //                   std::string payload(buff.begin(), buff.end());
-  //                   std::string end("\r\n");
-
-  //                   sink.write(preheader.data(), preheader.size());
-  //                   sink.write(payload.data(), payload.size());
-  //                   sink.write(end.data(), end.size());
-  //                   sink.os.flush();
-  //                 }
-  //                 return true; // return 'false' if you want to cancel the process.
-  //               }); });
-
   std::cout << "Server running!" << std::endl;
 
   svr.listen("0.0.0.0", 8080);
-  cameraThread.join();
+  cameraThread.detach();
 }
