@@ -4,7 +4,7 @@ This was an experiment with nix/c++ and opencv. I wanted to see if nix could be 
 
 ## TODO:
 
-- [ ] Add multithread support for camera streams.
+- [X] Add multithread support for camera streams.
 - [X] Working camera stream.
 
 ## Libraries

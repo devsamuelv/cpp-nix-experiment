@@ -18,13 +18,14 @@ public:
   void
   update_buffer(cv::Mat mat)
   {
-    std::lock_guard<std::mutex> lock(buffer_mutex);
+    std::unique_lock<std::mutex> lock(buffer_mutex);
     cv::imencode(".jpg", mat, *buffer);
+    lock.unlock();
   };
 
   std::vector<uchar> get_buffer()
   {
-    std::lock_guard<std::mutex> lock(buffer_mutex);
+    std::lock_guard lock(buffer_mutex);
     return *buffer.get();
   };
 };
@@ -61,19 +62,22 @@ int main(int, char **)
   // HTTP
   httplib::Server svr;
 
-  svr.Get("/hi", [](const httplib::Request &, httplib::Response &res)
+  svr.Get("/stream", [](const httplib::Request &, httplib::Response &res)
           { res.set_chunked_content_provider(
                 "multipart/x-mixed-replace; boundary=frame", // Content type
                 [&](size_t offset, httplib::DataSink &sink)
                 {
-                  std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", (manager.get_buffer()).size()));
-                  std::string payload((manager.get_buffer()).begin(), (manager.get_buffer()).end());
+                  std::vector<uchar> video_data = (manager.get_buffer());
+
+                  std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", video_data.size()));
+                  std::string payload(video_data.begin(), video_data.end());
                   std::string end("\r\n");
 
                   sink.write(preheader.data(), preheader.size());
                   sink.write(payload.data(), payload.size());
                   sink.write(end.data(), end.size());
                   sink.os.flush();
+
                   return true; // return 'false' if you want to cancel the process.
                 }); });
 
