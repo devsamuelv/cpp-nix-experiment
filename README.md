@@ -1,6 +1,6 @@
 # Nix Camera Experiment
 
-This was an experiment with nix/c++ and opencv. I wanted to see if nix could be a useful solution for big projects on embedded systems. Since nix has support for some popular embbeded boards, I thought it was worth pursuing.
+This was an experiment with nix/c++ and opencv. I wanted to see if nix could be a useful solution for big projects on embedded systems. Nix has support for some popular embbeded boards, so I thought it was worth pursuing.
 
 ## TODO:
 

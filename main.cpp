@@ -7,6 +7,7 @@
 #include <format>
 #include <mutex>
 #include <thread>
+#include <torch/library.h>
 
 class VideoManager
 {
@@ -35,6 +36,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
   while (cap.get().isOpened())
   {
     cv::Mat frame;
+
     cap.get().read(frame);
     manager.get().update_buffer(frame);
   }
@@ -53,6 +55,7 @@ int main(int, char **)
   capture.set(cv::CAP_PROP_EXPOSURE, 0);
   capture.set(cv::CAP_PROP_FRAME_WIDTH, 720);
   capture.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+  capture.set(cv::CAP_PROP_FPS, 30);
 
   std::thread cameraThread(
       camera_thread,

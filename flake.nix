@@ -3,17 +3,26 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
+    torch = {
+      url = "path:./libraries/torch";
+    };
   };
   outputs =
     {
       nixpkgs,
       flake-utils,
+      torch,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = (
+          import nixpkgs {
+            inherit system;
+          }
+        );
+        # torch = (import ./libraries/torch/lib.nix { });
       in
       {
         packages.default = pkgs.stdenv.mkDerivation {
@@ -21,10 +30,19 @@
           version = "1.0.0";
           src = ./.;
 
+          cmakeFlags = [
+            "-DGTK2_GLIBCONFIG_INCLUDE_DIR=${pkgs.glib.out}/lib/glib-2.0/include"
+            "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
+          ];
+
           nativeBuildInputs = [
             pkgs.cmake
             pkgs.makeWrapper
             pkgs.httplib
+            # pkgs.libtorch
+            pkgs.glib
+            torch
+            pkgs.gtk2
             (pkgs.opencv.override {
               enableJPEG = true;
               enableFfmpeg = true;
