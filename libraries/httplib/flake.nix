@@ -8,7 +8,6 @@
     {
       nixpkgs,
       flake-utils,
-      torch,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -21,7 +20,7 @@
         );
       in
       {
-        packages.httplib = pkgs.stdenv.mkDerivation {
+        packages.cpp-httplib = pkgs.stdenv.mkDerivation {
           pname = "cpp-httplib";
           version = "2.12";
 

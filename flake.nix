@@ -42,13 +42,15 @@
             pkgs.cmake
             pkgs.makeWrapper
             pkgs.glib
-            torch.packages.x86_64-linux.libtorch
-            httplib.packages.${pkgs.system}.cpp-httplib
             pkgs.gtk2
             (pkgs.opencv.override {
               enableJPEG = true;
               enableFfmpeg = true;
             })
+
+            # x86_64-linux only
+            torch.packages.x86_64-linux.libtorch
+            httplib.packages.x86_64-linux.cpp-httplib
           ];
           buildPhase = ''
             mkdir -p build
