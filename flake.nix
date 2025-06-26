@@ -4,7 +4,10 @@
       url = "github:numtide/flake-utils";
     };
     torch = {
-      url = "path:./libraries/torch";
+      url = "path:libraries/torch";
+    };
+    httplib = {
+      url = "path:libraries/httplib";
     };
   };
   outputs =
@@ -12,6 +15,7 @@
       nixpkgs,
       flake-utils,
       torch,
+      httplib,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -22,7 +26,6 @@
             inherit system;
           }
         );
-        # torch = (import ./libraries/torch/lib.nix { });
       in
       {
         packages.default = pkgs.stdenv.mkDerivation {
@@ -38,10 +41,9 @@
           nativeBuildInputs = [
             pkgs.cmake
             pkgs.makeWrapper
-            pkgs.httplib
-            # pkgs.libtorch
             pkgs.glib
-            torch
+            torch.packages.x86_64-linux.libtorch
+            httplib.packages.${pkgs.system}.cpp-httplib
             pkgs.gtk2
             (pkgs.opencv.override {
               enableJPEG = true;

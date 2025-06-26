@@ -5,8 +5,8 @@ let
   pkgs = import nixpkgs { };
   callPackage = pkgs.lib.callPackageWith (pkgs // packages);
   packages = {
-    # httplib = pkgs.callPackage ./libraries/httplib.nix { };
-    # libtorch = pkgs.callPackage ./libraries/torch/lib.nix { };
+    httplib = pkgs.callPackage ./libraries/httplib.nix { };
+    libtorch = pkgs.callPackage ./libraries/torch/lib.nix { };
   };
 in
 packages
