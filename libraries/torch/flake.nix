@@ -8,6 +8,7 @@
     {
       nixpkgs,
       flake-utils,
+      cudaSupport ? false,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -21,11 +22,19 @@
         packages.libtorch = pkgs.stdenv.mkDerivation {
           pname = "libtorch";
           version = "2.7.0";
-          src = nixpkgs.legacyPackages.x86_64-linux.fetchzip {
-            name = "libtorch-cxx11-abi-shared-with-deps-2.7.0-cpu.zip";
-            url = "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.7.0%2Bcpu.zip";
-            sha256 = "sha256-8REMU+E0DZQDRUw1zx0K5oMqVsTBJ8g88dqnLpUfcjM=";
-          };
+          src =
+            if cudaSupport then
+              nixpkgs.legacyPackages.x86_64-linux.fetchzip {
+                name = "libtorch-cxx11-abi-shared-with-deps-2.7.0-cu124.zip";
+                url = "https://download.pytorch.org/libtorch/cu118/libtorch-cxx11-abi-shared-with-deps-2.7.0%2Bcu118.zip";
+                # hash = "sha256-a7d14139451912d723e8f78ae7d5a00c13b99091c6871cd7a22f9d2d9c642e65";
+              }
+            else
+              nixpkgs.legacyPackages.x86_64-linux.fetchzip {
+                name = "libtorch-cxx11-abi-shared-with-deps-2.7.0-cpu.zip";
+                url = "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.7.0%2Bcpu.zip";
+                sha256 = "sha256-8REMU+E0DZQDRUw1zx0K5oMqVsTBJ8g88dqnLpUfcjM=";
+              };
 
           nativeBuildInputs = [ pkgs.patchelf ];
 
