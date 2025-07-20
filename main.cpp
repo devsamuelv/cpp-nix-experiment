@@ -8,12 +8,14 @@
 #include <mutex>
 #include <thread>
 #include <torch/library.h>
+#include <torch/torch.h>
 
 class VideoManager
 {
 private:
   std::mutex buffer_mutex;
   std::shared_ptr<std::vector<uchar>> buffer = std::make_shared<std::vector<uchar>>();
+  torch::Tensor tens = torch::rand({2, 5});
 
 public:
   void

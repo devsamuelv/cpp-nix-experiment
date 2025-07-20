@@ -52,7 +52,14 @@
             substituteInPlace \
               ./dev/share/cmake/Caffe2/Caffe2Targets-release.cmake \
               --replace \''${_IMPORT_PREFIX}/lib "$out/lib" \
+
+            cp -r ./dev/share $out/share
+            cp -r ./dev/include $out/include
           '';
+
+          outputs = [
+            "out"
+          ];
 
         };
       }

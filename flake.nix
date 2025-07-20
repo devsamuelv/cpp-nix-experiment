@@ -54,6 +54,9 @@
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
             ];
+            buildInputs = [
+              pkgs.gtk2
+            ];
             buildPhase = ''
               mkdir -p build
               cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release
@@ -68,8 +71,7 @@
         devShells.default =
           with pkgs;
           mkShell {
-            GTK2_GLIBCONFIG_INCLUDE_DIR = "${pkgs.glib.out}/lib/glib-2.0/include";
-            GTK2_GDKCONFIG_INCLUDE_DIR = "${pkgs.gtk2.out}/lib/gtk-2.0/include";
+            # TORCH_LIBRARIES = "${torch.packages.x86_64-linux.libtorch.out}/lib";
 
             packages = [
               pkgs.cmake
