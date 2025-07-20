@@ -38,6 +38,8 @@
             cmakeFlags = [
               "-DGTK2_GLIBCONFIG_INCLUDE_DIR=${pkgs.glib.out}/lib/glib-2.0/include"
               "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
+              "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
+              "-DCMAKE_MODULE_PATH=$CMAKE_MODULE_PATH;${pkgs.opencv.out}/lib/cmake/opencv4"
             ];
 
             nativeBuildInputs = [
@@ -71,7 +73,8 @@
         devShells.default =
           with pkgs;
           mkShell {
-            # TORCH_LIBRARIES = "${torch.packages.x86_64-linux.libtorch.out}/lib";
+            TORCH_LIBRARIES = "${torch.packages.x86_64-linux.libtorch.out}/lib";
+            CMAKE_MODULE_PATH = "${pkgs.opencv.out}/lib/cmake/opencv4";
 
             packages = [
               pkgs.cmake
