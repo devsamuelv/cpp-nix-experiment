@@ -15,7 +15,6 @@ class VideoManager
 private:
   std::mutex buffer_mutex;
   std::shared_ptr<std::vector<uchar>> buffer = std::make_shared<std::vector<uchar>>();
-  torch::Tensor tens = torch::rand({2, 5});
 
 public:
   void
@@ -35,13 +34,29 @@ public:
 
 void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<VideoManager> manager)
 {
+  torch::jit::Module model;
+  torch::load(model, "model.pt");
+
+  // Enable pytorch inference
+  torch::InferenceMode(true);
+
   while (cap.get().isOpened())
   {
     cv::Mat frame;
-
     cap.get().read(frame);
-    manager.get().update_buffer(frame);
+
+    // The opencv mat needs to be converted into a useable tensor for the model.
+    // Then the feature mask needs to be translated onto the image for display.
+
+    // This is practically pseudocode, it isn't correct.
+    auto result = model(frame);
+
+    manager.get()
+        .update_buffer(frame);
   }
+
+  // Disable pytorch inference on exit.
+  torch::InferenceMode(false);
 }
 
 size_t get_size(std::shared_ptr<std::vector<uchar>> a)
