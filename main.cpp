@@ -9,6 +9,10 @@
 #include <thread>
 #include <torch/library.h>
 #include <torch/torch.h>
+#include <torch/script.h>
+#include <torch/types.h>
+#include <ATen/ATen.h>
+#include "src/image/util.h"
 
 class VideoManager
 {
@@ -32,27 +36,71 @@ public:
   };
 };
 
+cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
+{
+  tensor = tensor.squeeze().detach();
+  // tensor = tensor.permute({1, 2}).contiguous();
+  // tensor = tensor.to(torch::kU8);
+  tensor = tensor.to(at::kByte);
+  tensor = tensor.to(torch::kCPU);
+  int64_t height = tensor.size(0);
+  int64_t width = tensor.size(1);
+
+  // Causes segfaults
+
+  return cv::Mat(cv::Size(width, height), CV_8UC3, tensor.mutable_data_ptr<uchar>());
+};
+
 void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<VideoManager> manager)
 {
+  // I think the model needs to be transfered to torchscript. I don't want to write a c++ version.
   torch::jit::Module model;
-  torch::load(model, "model.pt");
+
+  const std::string path = "/home/samuel/Documents/code/robotics/teleop-control/"
+                           "model.pt";
+  model = torch::jit::load(path);
+
+  // We use Aten namespace because the torch namespace usses autodiff which we disable using inference.
 
   // Enable pytorch inference
   torch::InferenceMode(true);
+
+  model.eval();
 
   while (cap.get().isOpened())
   {
     cv::Mat frame;
     cap.get().read(frame);
 
-    // The opencv mat needs to be converted into a useable tensor for the model.
-    // Then the feature mask needs to be translated onto the image for display.
+    // std::vector<torch::jit::IValue> inputs;
+
+    frame.convertTo(frame, CV_32FC3, 1.0 / 255.0);
+    at::Tensor image_tensor = torch::from_blob(frame.data, {frame.rows, frame.cols, frame.channels()}, at::kFloat);
+    image_tensor = image_tensor.permute({2, 0, 1});
+
+    // Optionally, clone to own memory
+    image_tensor = image_tensor.clone();
+
+    // Normalize (ImageNet)
+    image_tensor = torch::data::transforms::Normalize<>(
+        {0.485, 0.456, 0.406},
+        {0.229, 0.224, 0.225})(image_tensor);
+
+    image_tensor = image_tensor.unsqueeze(0).to(at::kCPU); // Batch dimention
+    image_tensor = image_tensor.to(at::kFloat);
+
+    // inputs.emplace_back(image_tensor);
 
     // This is practically pseudocode, it isn't correct.
-    auto result = model(frame);
+    auto output = model.forward({image_tensor}).toTuple();
+    auto mask_tuple = output.get();
+
+    // H, W, 1 Image
+    auto pred = torch::argmax(mask_tuple->elements()[0].toTensor(), 1).squeeze(0).to(at::kCPU).data();
+    auto out = torchTensortoCVMat(pred);
 
     manager.get()
-        .update_buffer(frame);
+        .update_buffer(out);
   }
 
   // Disable pytorch inference on exit.
