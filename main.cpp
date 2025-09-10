@@ -39,12 +39,7 @@ public:
 cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
 {
   tensor = tensor.squeeze().detach();
-  // tensor = tensor.permute({1, 2}).contiguous();
-  // tensor = tensor.to(torch::kU8);
-  tensor = tensor.to(at::kByte);
-  tensor = tensor.to(torch::kCPU);
-
-  // Causes segfaults
+  tensor = tensor.to(at::kByte).to(torch::kCPU);
 
   return cv::Mat(cv::Size(tensor.size(1), tensor.size(0)), CV_8UC3, tensor.mutable_data_ptr<uchar>());
 };
@@ -58,8 +53,6 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
                            "model.pt";
   model = torch::jit::load(path);
 
-  // We use Aten namespace because the torch namespace usses autodiff which we disable using inference.
-
   // Enable pytorch inference
   torch::InferenceMode(true);
 
@@ -70,8 +63,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
     cv::Mat frame;
     cap.get().read(frame);
 
-    // std::vector<torch::jit::IValue> inputs;
-
+    // Convert the color scheme and channels to a torch transferable format (CV_32FC3) 32-bit data with 3 channels.
     frame.convertTo(frame, CV_32FC3, 1.0 / 255.0);
     at::Tensor image_tensor = torch::from_blob(frame.data, {frame.rows, frame.cols, frame.channels()}, at::kFloat);
     image_tensor = image_tensor.permute({2, 0, 1});
@@ -87,9 +79,6 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
     image_tensor = image_tensor.unsqueeze(0).to(at::kCPU); // Batch dimention
     image_tensor = image_tensor.to(at::kFloat);
 
-    // inputs.emplace_back(image_tensor);
-
-    // This is practically pseudocode, it isn't correct.
     auto output = model.forward({image_tensor}).toTuple();
     auto mask_tuple = output.get();
 
