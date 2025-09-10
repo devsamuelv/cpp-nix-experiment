@@ -43,12 +43,10 @@ cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
   // tensor = tensor.to(torch::kU8);
   tensor = tensor.to(at::kByte);
   tensor = tensor.to(torch::kCPU);
-  int64_t height = tensor.size(0);
-  int64_t width = tensor.size(1);
 
   // Causes segfaults
 
-  return cv::Mat(cv::Size(width, height), CV_8UC3, tensor.mutable_data_ptr<uchar>());
+  return cv::Mat(cv::Size(tensor.size(1), tensor.size(0)), CV_8UC3, tensor.mutable_data_ptr<uchar>());
 };
 
 void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<VideoManager> manager)
