@@ -1,5 +1,5 @@
 build/
 result/
 result
-.vscode
+.vscode/settings.json
 *.pt

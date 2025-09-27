@@ -103,10 +103,6 @@ stdenv.mkDerivation rec {
     "dev"
   ];
 
-  # passthru.tests.cmake = callPackage ./test {
-  #   inherit cudaSupport;
-  # };
-
   meta = with lib; {
     description = "C++ API of the PyTorch machine learning framework";
     homepage = "https://pytorch.org/";

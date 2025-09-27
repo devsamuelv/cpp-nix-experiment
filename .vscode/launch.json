@@ -1,0 +1,31 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "(gdb) Luanch",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/result/bin/teleop-control",
+			"MIMode": "gdb",
+			"cwd": "${workspaceFolder}/",
+			"miDebuggerPath": "/nix/store/mmfmyi6fl8ggvhwd2nfc9ds1d71gkwz6-gdb-16.2/bin/gdb",
+			"launchCompleteCommand": "exec-run",
+			"preLaunchTask": "Nix Build",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				}
+			]
+		}
+	]
+}
