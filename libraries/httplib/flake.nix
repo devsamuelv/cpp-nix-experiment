@@ -27,8 +27,8 @@
           src = nixpkgs.legacyPackages.x86_64-linux.fetchFromGitHub {
             owner = "devsamuelv";
             repo = "cpp-httplib";
-            rev = "84c850f29919d4cf40f3515a3799813c5f4ea45a";
-            sha256 = "sha256-qEmKyQElp4Zpvag62q5l3qHd9J7i2w094OVGjBsTVPI=";
+            rev = "629644ef9765ab33284498b2daa6842fc32c9ab6";
+            sha256 = "sha256-gUgt/0gnAytPYQksYVwPQF9Pk/+TOCuxdYkmU9ocLy4=";
           };
 
           nativeBuildInputs = [ pkgs.cmake ];

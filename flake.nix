@@ -82,7 +82,7 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
-              pkgs.vscode
+              pkgs.clang-tools
               (pkgs.opencv.override {
                 enableJPEG = true;
                 enableFfmpeg = true;
