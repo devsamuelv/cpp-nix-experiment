@@ -13,6 +13,10 @@
 #include <torch/types.h>
 #include <ATen/ATen.h>
 #include "src/image/util.h"
+#include <rclcpp/rclcpp.hpp>
+#include "image_transport/image_transport/camera_publisher.h"
+
+using namespace std::chrono_literals;
 
 // Heap declared array
 cv::Vec3b *colormap = new cv::Vec3b[57]{
@@ -150,7 +154,7 @@ size_t get_size(std::shared_ptr<std::vector<uchar>> a)
   return (*a).size();
 }
 
-int main(int, char **)
+int main(int argc, char *argv[])
 {
   static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
   static VideoManager manager;

@@ -9,6 +9,13 @@
     httplib = {
       url = "path:libraries/httplib";
     };
+    # Nix Ros Overlay
+    nix-ros-overlay = {
+      url = "github:lopsided98/nix-ros-overlay/master";
+    };
+    nixpkgs = {
+      follows = "nix-ros-overlay/nixpkgs";
+    };
   };
   outputs =
     {
@@ -16,6 +23,7 @@
       flake-utils,
       torch,
       httplib,
+      nix-ros-overlay,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -24,6 +32,7 @@
         pkgs = (
           import nixpkgs {
             inherit system;
+            overlays = [ nix-ros-overlay.overlays.default ];
           }
         );
       in
@@ -55,6 +64,20 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
+
+              # ROS Packages
+              pkgs.colcon
+              pkgs.rosPackages.humble.ros-core
+              # ... other non-ROS packages
+              (
+                with pkgs.rosPackages.humble;
+                buildEnv {
+                  paths = [
+                    image-transport
+                    # ... other ROS packages
+                  ];
+                }
+              )
             ];
             buildInputs = [
               pkgs.gtk2
@@ -77,12 +100,18 @@
             CMAKE_MODULE_PATH = "${pkgs.opencv.out}/lib/cmake/opencv4";
 
             packages = [
+              # Generic DevTools
               pkgs.cmake
               pkgs.gcc
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
+              # Has clangd which is important to find other libraries
+              pkgs.clang-tools
               pkgs.vscode
+              pkgs.gdb
+
+              # Vision
               (pkgs.opencv.override {
                 enableJPEG = true;
                 enableFfmpeg = true;
@@ -91,7 +120,20 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
-              pkgs.gdb
+
+              # ROS Packages
+              pkgs.colcon
+              pkgs.rosPackages.humble.ros-core
+              # ... other non-ROS packages
+              (
+                with pkgs.rosPackages.humble;
+                buildEnv {
+                  paths = [
+                    image-transport
+                    # ... other ROS packages
+                  ];
+                }
+              )
             ];
           };
       }
