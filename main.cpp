@@ -13,8 +13,8 @@
 #include <torch/types.h>
 #include <ATen/ATen.h>
 #include "src/image/util.h"
-#include <rclcpp/rclcpp.hpp>
-#include "image_transport/image_transport/camera_publisher.h"
+// #include <rclcpp/rclcpp/rclcpp.hpp>
+// #include "image_transport/image_transport/camera_publisher.h"
 
 using namespace std::chrono_literals;
 

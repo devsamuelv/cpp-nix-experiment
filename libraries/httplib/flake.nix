@@ -28,7 +28,7 @@
             owner = "devsamuelv";
             repo = "cpp-httplib";
             rev = "84c850f29919d4cf40f3515a3799813c5f4ea45a";
-            sha256 = "sha256-qEmKyQElp4Zpvag62q5l3qHd9J7i2w094OVGjBsTVPI=";
+            sha256 = "sha256-3HF3cLFdJaI4QG/ITNEL4C0LsxVWRzjcys7X5MN/TN0=";
           };
 
           nativeBuildInputs = [ pkgs.cmake ];

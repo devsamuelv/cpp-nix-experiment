@@ -106,9 +106,9 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
+              
               # Has clangd which is important to find other libraries
               pkgs.clang-tools
-              pkgs.vscode
               pkgs.gdb
 
               # Vision
