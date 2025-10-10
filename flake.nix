@@ -106,10 +106,12 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
+              pkgs.ccls
               
               # Has clangd which is important to find other libraries
               pkgs.clang-tools
               pkgs.gdb
+              pkgs.ninja
 
               # Vision
               (pkgs.opencv.override {
@@ -123,13 +125,14 @@
 
               # ROS Packages
               pkgs.colcon
-              pkgs.rosPackages.humble.ros-core
               # ... other non-ROS packages
               (
                 with pkgs.rosPackages.humble;
                 buildEnv {
                   paths = [
+                    ros-core
                     image-transport
+                    sensor-msgs
                     # ... other ROS packages
                   ];
                 }

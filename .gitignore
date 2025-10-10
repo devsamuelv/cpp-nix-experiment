@@ -2,4 +2,8 @@ build/
 result/
 result
 .vscode/settings.json
+.vscode/c_cpp_properties.json
 *.pt
+.ccls-cache/
+Debug/
+compile_commands.json
