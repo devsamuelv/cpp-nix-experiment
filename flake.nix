@@ -9,6 +9,13 @@
     httplib = {
       url = "path:libraries/httplib";
     };
+    # Nix Ros Overlay
+    nix-ros-overlay = {
+      url = "github:lopsided98/nix-ros-overlay/master";
+    };
+    nixpkgs = {
+      follows = "nix-ros-overlay/nixpkgs";
+    };
   };
   outputs =
     {
@@ -16,6 +23,7 @@
       flake-utils,
       torch,
       httplib,
+      nix-ros-overlay,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -24,6 +32,7 @@
         pkgs = (
           import nixpkgs {
             inherit system;
+            overlays = [ nix-ros-overlay.overlays.default ];
           }
         );
       in
@@ -40,6 +49,7 @@
               "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
               "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
               "-DCMAKE_MODULE_PATH=$CMAKE_MODULE_PATH;${pkgs.opencv.out}/lib/cmake/opencv4"
+              "-D$AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH"
             ];
 
             nativeBuildInputs = [
@@ -55,10 +65,32 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
+
+              # ROS Packages
+              pkgs.colcon
+              # ... other non-ROS packages
+              (
+                with pkgs.rosPackages.humble;
+                buildEnv {
+                  paths = [
+                    image-transport
+                    ros-core
+                    sensor-msgs
+                    cv-bridge
+                    ament-cmake
+                    ament-cmake-core
+                    ament-cmake-ros
+                    ament-cmake-auto
+
+                    # ... other ROS packages
+                  ];
+                }
+              )
             ];
             buildInputs = [
               pkgs.gtk2
             ];
+
             buildPhase = ''
               mkdir -p build
               cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release
@@ -77,6 +109,7 @@
             CMAKE_MODULE_PATH = "${pkgs.opencv.out}/lib/cmake/opencv4";
 
             packages = [
+              # Generic DevTools
               pkgs.cmake
               pkgs.gcc
               pkgs.glib
@@ -91,7 +124,28 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
-              pkgs.gdb
+
+              # ROS Packages
+              pkgs.colcon
+              # ... other non-ROS packages
+              (
+                with pkgs.rosPackages.humble;
+                buildEnv {
+                  paths = [
+                    ros-core
+                    image-transport
+                    sensor-msgs
+                    cv-bridge
+                    ament-cmake
+                    ament-cmake-core
+                    ament-cmake-ros
+                    ament-cmake-auto
+                    foxglove-bridge
+
+                    # ... other ROS packages
+                  ];
+                }
+              )
             ];
           };
       }
