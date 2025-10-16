@@ -1,20 +1,22 @@
-#include <iostream>
-#include <vector>
-#include <opencv4/opencv2/opencv.hpp>
-#include <string>
-#include <httplib.h>
+#include "image_transport/image_transport.hpp"
+#include "src/image/util.h"
+#include <ATen/ATen.h>
 #include <algorithm>
 #include <format>
+#include <httplib.h>
+#include <iostream>
 #include <mutex>
+#include <opencv4/opencv2/opencv.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <string>
 #include <thread>
 #include <torch/library.h>
-#include <torch/torch.h>
 #include <torch/script.h>
+#include <torch/torch.h>
 #include <torch/types.h>
-#include <ATen/ATen.h>
-#include "src/image/util.h"
-#include <rclcpp/rclcpp.hpp>
-#include "image_transport/camera_publisher.h"
+#include <vector>
+#include <cv_bridge/cv_bridge.h>
+#include <chrono>
 
 using namespace std::chrono_literals;
 
@@ -45,11 +47,11 @@ class VideoManager
 {
 private:
   std::mutex buffer_mutex;
-  std::shared_ptr<std::vector<uchar>> buffer = std::make_shared<std::vector<uchar>>();
+  std::shared_ptr<std::vector<uchar>> buffer =
+      std::make_shared<std::vector<uchar>>();
 
 public:
-  void
-  update_buffer(cv::Mat mat)
+  void update_buffer(cv::Mat mat)
   {
     std::unique_lock<std::mutex> lock(buffer_mutex);
     *buffer = std::vector<uchar>();
@@ -69,7 +71,8 @@ cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
   tensor = tensor.squeeze().detach();
   tensor = tensor.to(at::kByte).to(torch::kCPU);
 
-  return cv::Mat(cv::Size(tensor.size(1), tensor.size(0)), CV_8UC1, tensor.mutable_data_ptr<uchar>());
+  return cv::Mat(cv::Size(tensor.size(1), tensor.size(0)), CV_8UC1,
+                 tensor.mutable_data_ptr<uchar>());
 };
 
 cv::Mat *applyFilter(cv::Mat *filter)
@@ -96,19 +99,31 @@ cv::Mat *applyFilter(cv::Mat *filter)
   return colorMat;
 }
 
-void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_wrapper<VideoManager> manager)
+void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
+                   std::reference_wrapper<VideoManager> manager, std::reference_wrapper<rclcpp::Node::SharedPtr> node)
 {
-  // I think the model needs to be transfered to torchscript. I don't want to write a c++ version.
+  // I think the model needs to be transfered to torchscript. I don't want to
+  // write a c++ version.
   torch::jit::Module model;
 
-  const std::string path = "/home/samuel/Documents/code/robotics/teleop-control/"
-                           "model.pt";
+  const std::string path =
+      "/home/samuel/Documents/code/robotics/teleop-control/"
+      "model.pt";
   model = torch::jit::load(path);
 
   // Enable pytorch inference
   torch::InferenceMode(true);
   at::Device device = at::kCPU;
   cv::Mat frame;
+
+  // RCL
+
+  image_transport::ImageTransport it{node.get()};
+  static image_transport::Publisher pub = it.advertise("camera/image", 1);
+  static image_transport::Publisher pub_raw = it.advertise("camera/image_raw", 1);
+
+  auto now = std::chrono::system_clock::now();
+  auto now_raw = std::chrono::system_clock::now();
 
   model.eval();
   model.to(device);
@@ -117,15 +132,34 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
   {
     cap.get().read(frame);
 
-    // Convert the color scheme and channels to a torch transferable format (CV_32FC3) 32-bit data with 3 channels.
+    auto duration_raw = now_raw.time_since_epoch();
+    auto duration_ms_raw = std::chrono::duration_cast<std::chrono::milliseconds>(duration_raw).count();
+
+    if (rclcpp::ok() && duration_ms_raw > 150)
+    {
+      std_msgs::msg::Header hdr;
+      sensor_msgs::msg::Image::SharedPtr msg;
+
+      msg = cv_bridge::CvImage(hdr, "bgr8", frame).toImageMsg();
+
+      pub_raw.publish(msg);
+
+      rclcpp::spin_some(node);
+      now_raw = std::chrono::system_clock::now();
+    }
+
+    // Convert the color scheme and channels to a torch transferable format
+    // (CV_32FC3) 32-bit data with 3 channels.
     frame.convertTo(frame, CV_32FC3, 1.0 / 255.0);
-    at::Tensor image_tensor = torch::from_blob(frame.data, {frame.rows, frame.cols, frame.channels()}, at::kFloat).to(device);
+    at::Tensor image_tensor =
+        torch::from_blob(frame.data, {frame.rows, frame.cols, frame.channels()},
+                         at::kFloat)
+            .to(device);
     image_tensor = image_tensor.permute({2, 0, 1});
 
     // Normalize (ImageNet)
     image_tensor = torch::data::transforms::Normalize<>(
-        {0.485, 0.456, 0.406},
-        {0.229, 0.224, 0.225})(image_tensor);
+        {0.485, 0.456, 0.406}, {0.229, 0.224, 0.225})(image_tensor);
 
     image_tensor = image_tensor.unsqueeze(0); // Batch dimention
     image_tensor = image_tensor.to(at::kFloat);
@@ -134,13 +168,30 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
     auto mask_tuple = output.get();
 
     // H, W, 1 Image
-    auto pred = torch::argmax(mask_tuple->elements()[0].toTensor(), 1).squeeze(0).data();
+    auto pred = torch::argmax(mask_tuple->elements()[0].toTensor(), 1)
+                    .squeeze(0)
+                    .data();
     auto out = torchTensortoCVMat(pred);
 
     cv::Mat *colorMat = applyFilter(&out);
 
-    manager.get()
-        .update_buffer(*colorMat);
+    auto duration = now.time_since_epoch();
+    auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+
+    if (rclcpp::ok() && duration_ms > 150)
+    {
+      std_msgs::msg::Header hdr;
+      sensor_msgs::msg::Image::SharedPtr msg;
+
+      msg = cv_bridge::CvImage(hdr, "bgr8", *colorMat).toImageMsg();
+
+      pub.publish(msg);
+
+      rclcpp::spin_some(node);
+      now = std::chrono::system_clock::now();
+    }
+
+    manager.get().update_buffer(*colorMat);
     frame.release();
   }
 
@@ -149,25 +200,24 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap, std::reference_
   torch::InferenceMode(false);
 }
 
-size_t get_size(std::shared_ptr<std::vector<uchar>> a)
-{
-  return (*a).size();
-}
+size_t get_size(std::shared_ptr<std::vector<uchar>> a) { return (*a).size(); }
 
 int main(int argc, char *argv[])
 {
   static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
   static VideoManager manager;
 
+  rclcpp::init(argc, argv);
+  rclcpp::NodeOptions options;
+
+  static rclcpp::Node::SharedPtr node = rclcpp::Node::make_shared("image_publisher", options);
+
   capture.set(cv::CAP_PROP_EXPOSURE, 0);
   capture.set(cv::CAP_PROP_FRAME_WIDTH, 1024);
   capture.set(cv::CAP_PROP_FRAME_HEIGHT, 2048);
   capture.set(cv::CAP_PROP_FPS, 30);
 
-  std::thread cameraThread(
-      camera_thread,
-      std::ref(capture),
-      std::ref(manager));
+  std::thread cameraThread(camera_thread, std::ref(capture), std::ref(manager), std::ref(node));
 
   // HTTP
   httplib::Server svr;
@@ -179,7 +229,10 @@ int main(int argc, char *argv[])
                 {
                   std::vector<uchar> video_data = (manager.get_buffer());
 
-                  std::string preheader(std::format("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", video_data.size()));
+                  std::string preheader(
+                      std::format("--frame\r\nContent-Type: "
+                                  "image/jpeg\r\nContent-Length: {}\r\n\r\n",
+                                  video_data.size()));
                   std::string payload(video_data.begin(), video_data.end());
                   std::string end("\r\n");
 
@@ -192,8 +245,6 @@ int main(int argc, char *argv[])
                 }); });
 
   std::cout << "Server running!" << std::endl;
-
-  rclcpp::init(argc, argv);
 
   svr.listen("0.0.0.0", 8080);
   cameraThread.detach();

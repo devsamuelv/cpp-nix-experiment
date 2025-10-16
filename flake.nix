@@ -49,6 +49,7 @@
               "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
               "-DGTK2_GDKCONFIG_INCLUDE_DIR=${pkgs.gtk2.out}/lib/gtk-2.0/include"
               "-DCMAKE_MODULE_PATH=$CMAKE_MODULE_PATH;${pkgs.opencv.out}/lib/cmake/opencv4"
+              "-D$AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH"
             ];
 
             nativeBuildInputs = [
@@ -67,13 +68,20 @@
 
               # ROS Packages
               pkgs.colcon
-              pkgs.rosPackages.humble.ros-core
               # ... other non-ROS packages
               (
                 with pkgs.rosPackages.humble;
                 buildEnv {
                   paths = [
                     image-transport
+                    ros-core
+                    sensor-msgs
+                    cv-bridge
+                    ament-cmake
+                    ament-cmake-core
+                    ament-cmake-ros
+                    ament-cmake-auto
+
                     # ... other ROS packages
                   ];
                 }
@@ -82,6 +90,7 @@
             buildInputs = [
               pkgs.gtk2
             ];
+
             buildPhase = ''
               mkdir -p build
               cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release
@@ -106,8 +115,8 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
-              pkgs.ccls
-              
+              pkgs.valgrind
+
               # Has clangd which is important to find other libraries
               pkgs.clang-tools
               pkgs.gdb
@@ -133,6 +142,13 @@
                     ros-core
                     image-transport
                     sensor-msgs
+                    cv-bridge
+                    ament-cmake
+                    ament-cmake-core
+                    ament-cmake-ros
+                    ament-cmake-auto
+                    foxglove-bridge
+
                     # ... other ROS packages
                   ];
                 }

@@ -1,0 +1,1 @@
+nix develop --impure -c ./result/bin/teleop-control
