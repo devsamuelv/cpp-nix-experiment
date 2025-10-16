@@ -115,14 +115,7 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
-              pkgs.valgrind
-
-              # Has clangd which is important to find other libraries
               pkgs.clang-tools
-              pkgs.gdb
-              pkgs.ninja
-
-              # Vision
               (pkgs.opencv.override {
                 enableJPEG = true;
                 enableFfmpeg = true;
