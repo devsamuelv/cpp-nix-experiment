@@ -75,13 +75,12 @@ cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
                  tensor.mutable_data_ptr<uchar>());
 };
 
-cv::Mat *applyFilter(cv::Mat *filter)
+cv::Mat applyFilter(cv::Mat *filter)
 {
   // Mat size x, y
   cv::Size size(2048, 1024);
 
-  // Heap mat
-  cv::Mat *colorMat = new cv::Mat(size, CV_8UC3);
+  cv::Mat colorMat(size, CV_8UC3);
 
   for (int x = 0; x < (*filter).rows; x++)
   {
@@ -92,7 +91,9 @@ cv::Mat *applyFilter(cv::Mat *filter)
       uchar c = (*filter).at<uchar>(x, y);
       cv::Vec3b point = colormap[c];
 
-      (*colorMat->ptr<cv::Vec3b>(x, y)) = point;
+      auto color_mat_pointer = (&colorMat)->ptr<cv::Vec3b>(x, y);
+
+      *color_mat_pointer = point;
     }
   }
 
@@ -173,7 +174,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
                     .data();
     auto out = torchTensortoCVMat(pred);
 
-    cv::Mat *colorMat = applyFilter(&out);
+    cv::Mat colorMat = applyFilter(&out);
 
     auto duration = now.time_since_epoch();
     auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -183,7 +184,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
       std_msgs::msg::Header hdr;
       sensor_msgs::msg::Image::SharedPtr msg;
 
-      msg = cv_bridge::CvImage(hdr, "bgr8", *colorMat).toImageMsg();
+      msg = cv_bridge::CvImage(hdr, "bgr8", colorMat).toImageMsg();
 
       pub.publish(msg);
 
@@ -191,7 +192,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
       now = std::chrono::system_clock::now();
     }
 
-    manager.get().update_buffer(*colorMat);
+    manager.get().update_buffer(colorMat);
     frame.release();
   }
 
