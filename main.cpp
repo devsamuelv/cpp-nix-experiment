@@ -17,6 +17,7 @@
 #include <vector>
 #include <cv_bridge/cv_bridge.h>
 #include <chrono>
+#include <csignal>
 
 using namespace std::chrono_literals;
 
@@ -42,6 +43,9 @@ cv::Vec3b *colormap = new cv::Vec3b[57]{
     cv::Vec3b(0, 0, 230),
     cv::Vec3b(119, 11, 32),
 };
+
+static volatile sig_atomic_t sig_caught = 0;
+static httplib::Server svr;
 
 class VideoManager
 {
@@ -75,20 +79,20 @@ cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
                  tensor.mutable_data_ptr<uchar>());
 };
 
-cv::Mat applyFilter(cv::Mat *filter)
+cv::Mat applyFilter(cv::Mat *image)
 {
-  // Mat size x, y
-  cv::Size size(2048, 1024);
+  cv::Size size((*image).cols, (*image).rows);
 
+  // Mat is allocated on stack and is using RAII to deallocate
   cv::Mat colorMat(size, CV_8UC3);
 
-  for (int x = 0; x < (*filter).rows; x++)
+  for (int x = 0; x < (*image).rows; x++)
   {
-    cv::Mat mat = filter->row(x);
+    cv::Mat mat = image->row(x);
 
     for (int y = 0; y < mat.cols; y++)
     {
-      uchar c = (*filter).at<uchar>(x, y);
+      uchar c = (*image).at<uchar>(x, y);
       cv::Vec3b point = colormap[c];
 
       auto color_mat_pointer = (&colorMat)->ptr<cv::Vec3b>(x, y);
@@ -129,9 +133,11 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
   model.eval();
   model.to(device);
 
-  while (cap.get().isOpened())
+  while (cap.get().isOpened() && sig_caught == 0)
   {
     cap.get().read(frame);
+
+    cv::MatSize inital_frame_size = frame.size;
 
     auto duration_raw = now_raw.time_since_epoch();
     auto duration_ms_raw = std::chrono::duration_cast<std::chrono::milliseconds>(duration_raw).count();
@@ -196,16 +202,24 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
     frame.release();
   }
 
-  delete &frame;
   // Disable pytorch inference on exit.
   torch::InferenceMode(false);
 }
 
 size_t get_size(std::shared_ptr<std::vector<uchar>> a) { return (*a).size(); }
 
+void signal_handler(int signal)
+{
+  sig_caught = 1;
+
+  svr.stop();
+
+  std::cout << "PROGRAM TERMINATED!" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-  static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
+  static cv::VideoCapture capture("/dev/video4", cv::CAP_V4L2);
   static VideoManager manager;
 
   rclcpp::init(argc, argv);
@@ -220,8 +234,9 @@ int main(int argc, char *argv[])
 
   std::thread cameraThread(camera_thread, std::ref(capture), std::ref(manager), std::ref(node));
 
-  // HTTP
-  httplib::Server svr;
+  // Handel term signals
+  signal(SIGTERM, signal_handler);
+  signal(2, signal_handler);
 
   svr.Get("/stream", [](const httplib::Request &, httplib::Response &res)
           { res.set_chunked_content_provider(
@@ -245,8 +260,8 @@ int main(int argc, char *argv[])
                   return true; // return 'false' if you want to cancel the process.
                 }); });
 
-  std::cout << "Server running!" << std::endl;
-
-  svr.listen("0.0.0.0", 8080);
   cameraThread.detach();
+
+  std::cout << "Server running!" << std::endl;
+  svr.listen("0.0.0.0", 8080);
 }
