@@ -6,7 +6,7 @@ This was an experiment with nix/c++ and opencv. I wanted to see if nix could be 
 
 - [X] Add multithread support for camera streams.
 - [X] Working camera stream.
-- [ ] Display image segmentation masks from pytorch models.
+- [X] Display image segmentation masks from pytorch models.
 - [ ] Optimize the ML segmentation camera stream for realtime speeds.
 
 ## Libraries
