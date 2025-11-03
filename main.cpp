@@ -1,5 +1,4 @@
 #include "image_transport/image_transport.hpp"
-#include "src/image/util.h"
 #include <ATen/ATen.h>
 #include <algorithm>
 #include <format>
@@ -18,6 +17,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <chrono>
 #include <csignal>
+#include "src/video/video_manager.hpp"
+#include "src/helpers/torch_helper.hpp"
 
 using namespace std::chrono_literals;
 
@@ -47,43 +48,12 @@ cv::Vec3b *colormap = new cv::Vec3b[57]{
 static volatile sig_atomic_t sig_caught = 0;
 static httplib::Server svr;
 
-class VideoManager
-{
-private:
-  std::mutex buffer_mutex;
-  std::shared_ptr<std::vector<uchar>> buffer =
-      std::make_shared<std::vector<uchar>>();
-
-public:
-  void update_buffer(cv::Mat mat)
-  {
-    std::unique_lock<std::mutex> lock(buffer_mutex);
-    *buffer = std::vector<uchar>();
-    cv::imencode(".jpg", mat, *buffer);
-    lock.unlock();
-  };
-
-  std::vector<uchar> get_buffer()
-  {
-    std::lock_guard lock(buffer_mutex);
-    return *buffer.get();
-  };
-};
-
-cv::Mat torchTensortoCVMat(torch::Tensor &tensor)
-{
-  tensor = tensor.squeeze().detach();
-  tensor = tensor.to(at::kByte).to(torch::kCPU);
-
-  return cv::Mat(cv::Size(tensor.size(1), tensor.size(0)), CV_8UC1,
-                 tensor.mutable_data_ptr<uchar>());
-};
-
 cv::Mat applyFilter(cv::Mat *image)
 {
   cv::Size size((*image).cols, (*image).rows);
 
   // Mat is allocated on stack and is using RAII to deallocate
+  // Heap allocated is terrible for this usecase since its inside a loop and we don't want a mem eater
   cv::Mat colorMat(size, CV_8UC3);
 
   for (int x = 0; x < (*image).rows; x++)
@@ -178,7 +148,7 @@ void camera_thread(std::reference_wrapper<cv::VideoCapture> cap,
     auto pred = torch::argmax(mask_tuple->elements()[0].toTensor(), 1)
                     .squeeze(0)
                     .data();
-    auto out = torchTensortoCVMat(pred);
+    auto out = TorchHelpers::torchTensortoCVMat(pred);
 
     cv::Mat colorMat = applyFilter(&out);
 

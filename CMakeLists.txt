@@ -12,6 +12,7 @@ find_package(image_transport REQUIRED)
 find_package(cv_bridge REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
+add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 
 add_executable(teleop-control main.cpp)
 
