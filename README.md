@@ -8,6 +8,8 @@ This was an experiment with nix/c++ and opencv. I wanted to see if nix could be 
 - [X] Working camera stream.
 - [X] Display image segmentation masks from pytorch models.
 - [ ] Optimize the ML segmentation camera stream for realtime speeds.
+- [ ] Improve segmentation accuracy. (Current masks are not useable for navigation)
+- [ ] Modularize codebase to allow seperation of tasks amongst threads and classes.
 
 ## Libraries
 
