@@ -19,6 +19,7 @@
 #include <csignal>
 #include "src/video/video_manager.hpp"
 #include "src/helpers/torch_helper.hpp"
+#include "src/tasks/testTask.hpp"
 
 using namespace std::chrono_literals;
 
