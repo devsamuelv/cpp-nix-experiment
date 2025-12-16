@@ -7,3 +7,5 @@ result
 .ccls-cache/
 Debug/
 compile_commands.json
+bin/
+.cache

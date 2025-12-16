@@ -26,3 +26,6 @@ I decided to use valgrind for memory debugging since its reliable and its been a
 ```sh
 valgrind --leak-check=yes ./result/bin/teleop-control
 ```
+
+## Developing on WSL
+Write something saying how wsl is not plug and play for this project

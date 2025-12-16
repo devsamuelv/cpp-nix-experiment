@@ -32,13 +32,15 @@
         pkgs = (
           import nixpkgs {
             inherit system;
-            overlays = [ nix-ros-overlay.overlays.default ];
+            overlays = [ 
+              nix-ros-overlay.overlays.default
+            ];
           }
         );
       in
       {
         packages.default =
-          with pkgs.stdenv;
+          with pkgs.clangStdenv;
           mkDerivation {
             pname = "teleop-control";
             version = "1.0.0";
@@ -104,18 +106,19 @@
 
         devShells.default =
           with pkgs;
-          mkShell {
+          mkShell.override { stdenv = pkgs.clangStdenv; } {
             TORCH_LIBRARIES = "${torch.packages.x86_64-linux.libtorch.out}/lib";
             CMAKE_MODULE_PATH = "${pkgs.opencv.out}/lib/cmake/opencv4";
 
             packages = [
               # Generic DevTools
+              # clang-tools must be first before clang
+              pkgs.clang-tools
               pkgs.cmake
-              pkgs.gcc
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
-              pkgs.clang-tools
+              pkgs.bear
               (pkgs.opencv.override {
                 enableJPEG = true;
                 enableFfmpeg = true;
