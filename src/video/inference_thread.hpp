@@ -3,7 +3,6 @@
 #include "video_manager.hpp"
 #include <ATen/ATen.h>
 #include <csignal>
-#include <cstddef>
 #include <cstdlib>
 #include <cv_bridge/cv_bridge.h>
 #include <functional>
@@ -11,6 +10,7 @@
 #include <opencv4/opencv2/opencv.hpp>
 #include <optional>
 #include <rclcpp/rclcpp/rclcpp.hpp>
+#include <spdlog/spdlog.h>
 #include <torch/library.h>
 #include <torch/script.h>
 #include <torch/torch.h>
@@ -18,25 +18,21 @@
 class InferenceThread {
 private:
   // Heap declared array
-  static cv::Vec3b *colormap;
+  inline static cv::Vec3b *colormap = new cv::Vec3b[19]{
+      cv::Vec3b(128, 64, 128),  cv::Vec3b(244, 35, 232),
+      cv::Vec3b(70, 70, 70),    cv::Vec3b(102, 102, 156),
+      cv::Vec3b(190, 153, 153), cv::Vec3b(153, 153, 153),
+      cv::Vec3b(250, 170, 30),  cv::Vec3b(220, 220, 0),
+      cv::Vec3b(107, 142, 35),  cv::Vec3b(152, 251, 152),
+      cv::Vec3b(0, 130, 180),   cv::Vec3b(220, 20, 60),
+      cv::Vec3b(255, 0, 0),     cv::Vec3b(0, 0, 142),
+      cv::Vec3b(0, 0, 70),      cv::Vec3b(0, 60, 100),
+      cv::Vec3b(0, 80, 100),    cv::Vec3b(0, 0, 230),
+      cv::Vec3b(119, 11, 32),
+  };
 
   static cv::Mat applyFilter(cv::Mat *image) {
     cv::Size size((*image).cols, (*image).rows);
-
-    if ((*colormap).cols <= 0) {
-      colormap = new cv::Vec3b[19]{
-          cv::Vec3b(128, 64, 128),  cv::Vec3b(244, 35, 232),
-          cv::Vec3b(70, 70, 70),    cv::Vec3b(102, 102, 156),
-          cv::Vec3b(190, 153, 153), cv::Vec3b(153, 153, 153),
-          cv::Vec3b(250, 170, 30),  cv::Vec3b(220, 220, 0),
-          cv::Vec3b(107, 142, 35),  cv::Vec3b(152, 251, 152),
-          cv::Vec3b(0, 130, 180),   cv::Vec3b(220, 20, 60),
-          cv::Vec3b(255, 0, 0),     cv::Vec3b(0, 0, 142),
-          cv::Vec3b(0, 0, 70),      cv::Vec3b(0, 60, 100),
-          cv::Vec3b(0, 80, 100),    cv::Vec3b(0, 0, 230),
-          cv::Vec3b(119, 11, 32),
-      };
-    }
 
     // Mat is allocated on stack and is using RAII to deallocate
     // Heap allocated is terrible for this usecase since its inside a loop and
@@ -68,9 +64,8 @@ public:
     // write a c++ version.
     torch::jit::Module model;
 
-    const std::string path =
-        "/home/samuel/Documents/code/robotics/teleop-control/"
-        "model.pt";
+    const std::string path = "/home/samuel/code/cpp-nix-experiment/"
+                             "model.pt";
     model = torch::jit::load(path);
 
     // Enable pytorch inference
@@ -105,11 +100,15 @@ public:
         sensor_msgs::msg::Image::SharedPtr msg;
 
         msg = cv_bridge::CvImage(hdr, "bgr8", frame).toImageMsg();
-
         pub_raw.publish(msg);
-
         rclcpp::spin_some(node);
         now_raw = std::chrono::system_clock::now();
+      }
+
+      // If no video data exit while and finish thread.
+      if (inital_frame_size.dims() <= 0) {
+        spdlog::error("No video data available");
+        return;
       }
 
       // Convert the color scheme and channels to a torch transferable format

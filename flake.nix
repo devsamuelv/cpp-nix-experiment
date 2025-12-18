@@ -1,46 +1,23 @@
 {
   inputs = {
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-    };
-    torch = {
-      url = "path:libraries/torch";
-    };
-    httplib = {
-      url = "path:libraries/httplib";
-    };
+    flake-utils = { url = "github:numtide/flake-utils"; };
+    torch = { url = "path:libraries/torch"; };
+    httplib = { url = "path:libraries/httplib"; };
+    spdlog = { url = "path:libraries/spdlog"; };
     # Nix Ros Overlay
-    nix-ros-overlay = {
-      url = "github:lopsided98/nix-ros-overlay/master";
-    };
-    nixpkgs = {
-      follows = "nix-ros-overlay/nixpkgs";
-    };
+    nix-ros-overlay = { url = "github:lopsided98/nix-ros-overlay/master"; };
+    nixpkgs = { follows = "nix-ros-overlay/nixpkgs"; };
   };
   outputs =
-    {
-      nixpkgs,
-      flake-utils,
-      torch,
-      httplib,
-      nix-ros-overlay,
-      ...
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
+    { nixpkgs, flake-utils, torch, httplib, spdlog, nix-ros-overlay, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = (
-          import nixpkgs {
-            inherit system;
-            overlays = [ 
-              nix-ros-overlay.overlays.default
-            ];
-          }
-        );
-      in
-      {
-        packages.default =
-          with pkgs.clangStdenv;
+        pkgs = (import nixpkgs {
+          inherit system;
+          overlays = [ nix-ros-overlay.overlays.default ];
+        });
+      in {
+        packages.default = with pkgs.clangStdenv;
           mkDerivation {
             pname = "teleop-control";
             version = "1.0.0";
@@ -67,12 +44,12 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
+              spdlog.packages.x86_64-linux.default
 
               # ROS Packages
               pkgs.colcon
               # ... other non-ROS packages
-              (
-                with pkgs.rosPackages.humble;
+              (with pkgs.rosPackages.humble;
                 buildEnv {
                   paths = [
                     image-transport
@@ -86,12 +63,9 @@
 
                     # ... other ROS packages
                   ];
-                }
-              )
+                })
             ];
-            buildInputs = [
-              pkgs.gtk2
-            ];
+            buildInputs = [ pkgs.gtk2 ];
 
             buildPhase = ''
               mkdir -p build
@@ -104,8 +78,7 @@
             '';
           };
 
-        devShells.default =
-          with pkgs;
+        devShells.default = with pkgs;
           mkShell.override { stdenv = pkgs.clangStdenv; } {
             TORCH_LIBRARIES = "${torch.packages.x86_64-linux.libtorch.out}/lib";
             CMAKE_MODULE_PATH = "${pkgs.opencv.out}/lib/cmake/opencv4";
@@ -118,7 +91,7 @@
               pkgs.glib
               pkgs.gtk2
               pkgs.clang
-              pkgs.bear
+              pkgs.nixfmt
               (pkgs.opencv.override {
                 enableJPEG = true;
                 enableFfmpeg = true;
@@ -127,12 +100,11 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
+              spdlog.packages.x86_64-linux.default
 
               # ROS Packages
               pkgs.colcon
-              # ... other non-ROS packages
-              (
-                with pkgs.rosPackages.humble;
+              (with pkgs.rosPackages.humble;
                 buildEnv {
                   paths = [
                     ros-core
@@ -147,10 +119,8 @@
 
                     # ... other ROS packages
                   ];
-                }
-              )
+                })
             ];
           };
-      }
-    );
+      });
 }

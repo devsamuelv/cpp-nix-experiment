@@ -19,7 +19,6 @@
 #include <torch/torch.h>
 #include <torch/types.h>
 #include <vector>
-// #include "src/tasks/testTask.hpp"
 
 using namespace std::chrono_literals;
 
@@ -37,7 +36,7 @@ void signal_handler(int signal) {
 }
 
 int main(int argc, char *argv[]) {
-  static cv::VideoCapture capture("/dev/video4", cv::CAP_V4L2);
+  static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
   static VideoManager manager;
 
   rclcpp::init(argc, argv);
