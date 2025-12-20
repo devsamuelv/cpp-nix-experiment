@@ -17,7 +17,7 @@ The libraries are added via nix packages housed inside the `libraries` folder. T
 
 ## Building & Running
 
-First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `./build-run.sh` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/stream`!
+First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Make sure that a camera is on `/dev/video0` then execute this command `./build-run.sh` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/stream`! 
 
 There are three main nix commands that you will need to know to develop with nix. It's the `build` and `develop` commands prefixed with `nix` like so: `nix develop` or `nix run`. Now for the next question what do all three really do?
 
