@@ -17,9 +17,9 @@ The libraries are added via nix packages housed inside the `libraries` folder. T
 
 ## Building & Running
 
-First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `nix run` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/hi`!
+First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `./build-run.sh` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/stream`!
 
-There are three main nix commands that you will need to know to develop with nix. It's the `run`, `build`, `develop` commands prefixed with `nix` like so: `nix develop` or `nix run`. Now for the next question what do all three really do?
+There are three main nix commands that you will need to know to develop with nix. It's the `build` and `develop` commands prefixed with `nix` like so: `nix develop` or `nix run`. Now for the next question what do all three really do?
 
 #### `nix build`
 
@@ -27,7 +27,7 @@ It will compile the project according to the nix configuration files like `flake
 
 #### `nix run`
 
-Will do everything in `nix build` and execute the binary when its finished building.
+Cannot use `nix run` because the ros libraries are not packaged into the binary. This means you need to build the program and then execute it in the shell provided by `nix develop`. There is a script to make this easier called `build-run.sh`
 
 #### `nix develop`
 
