@@ -44,7 +44,7 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
-              spdlog.packages.x86_64-linux.default
+              # spdlog.packages.x86_64-linux.default
 
               # ROS Packages
               pkgs.colcon
@@ -100,7 +100,7 @@
               # x86_64-linux only
               torch.packages.x86_64-linux.libtorch
               httplib.packages.x86_64-linux.cpp-httplib
-              spdlog.packages.x86_64-linux.default
+              # spdlog.packages.x86_64-linux.default
 
               # ROS Packages
               pkgs.colcon

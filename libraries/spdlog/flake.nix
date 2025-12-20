@@ -21,18 +21,18 @@
           };
 
           cmakeFlags = [ ];
-
-          nativeBuildInputs = [ pkgs.cmake pkgs.makeWrapper pkgs.glib ];
+          nativeBuildInputs = [ pkgs.cmake pkgs.makeWrapper pkgs.glib libfmt ];
           buildInputs = [ libfmt ];
 
           buildPhase = ''
             mkdir -p build
             cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release
-            cmake --build build
+            cmake --build ./build
           '';
           installPhase = ''
-            mkdir -p $out/bin
-            cp -r build/ $out/bin
+            export PATH="$PATH:${libfmt.out}/fmtlib"
+            mkdir -p $out/
+            cp -r build/** $out
           '';
         };
       });

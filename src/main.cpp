@@ -12,6 +12,7 @@
 #include <mutex>
 #include <opencv4/opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <thread>
 #include <torch/library.h>
@@ -32,11 +33,11 @@ void signal_handler(int signal) {
 
   svr.stop();
 
-  std::cout << "PROGRAM TERMINATED!" << std::endl;
+  spdlog::info("Program Terminated!");
 }
 
 int main(int argc, char *argv[]) {
-  static cv::VideoCapture capture("/dev/video0", cv::CAP_V4L2);
+  static cv::VideoCapture capture("/dev/video0", cv::CAP_ANY);
   static VideoManager manager;
 
   rclcpp::init(argc, argv);
@@ -62,7 +63,6 @@ int main(int argc, char *argv[]) {
         "multipart/x-mixed-replace; boundary=frame", // Content type
         [&](size_t offset, httplib::DataSink &sink) {
           std::vector<uchar> video_data = (manager.get_buffer());
-
           std::string preheader(
               std::format("--frame\r\nContent-Type: "
                           "image/jpeg\r\nContent-Length: {}\r\n\r\n",
@@ -81,6 +81,6 @@ int main(int argc, char *argv[]) {
 
   cameraThread.detach();
 
-  std::cout << "Server running!" << std::endl;
+  spdlog::info("Webserver running!");
   svr.listen("0.0.0.0", 8080);
 }

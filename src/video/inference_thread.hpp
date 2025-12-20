@@ -85,6 +85,10 @@ public:
     model.eval();
     model.to(device);
 
+    if (cap.get().isOpened() == false) {
+      spdlog::error("Camera is not opened!");
+    }
+
     while (cap.get().isOpened()) {
       cap.get().read(frame);
 

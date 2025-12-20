@@ -12,6 +12,7 @@ endif()
 project(teleop-control VERSION 0.1.0 LANGUAGES C CXX)
 add_executable(teleop-control ${CMAKE_SOURCE_DIR}/src/main.cpp)
 
+find_package(fmt REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(OpenCV REQUIRED imgcodecs imgproc videoio)
 find_package(Torch REQUIRED)
@@ -32,6 +33,7 @@ target_link_libraries(teleop-control
   rclcpp::rclcpp
   cv_bridge::cv_bridge
 )
+target_link_libraries(teleop-control fmt::fmt)
 
 # Dont forget to add ament export include and dependcies calls from template 
 

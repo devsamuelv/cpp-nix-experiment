@@ -15,11 +15,11 @@ pkgs.clangStdenv.mkDerivation rec {
 
   buildPhase = ''
     mkdir -p build
-    cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=TRUE
+    cmake -S $src -B ./build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=TRUE -DFMT_TEST=FALSE
     cmake --build build
   '';
   installPhase = ''
-    mkdir -p $out/bin
-    cp -r build/ $out/bin
+    mkdir -p $out/fmtlib
+    cp -r build/** $out/fmtlib
   '';
 }

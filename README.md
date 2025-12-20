@@ -13,11 +13,25 @@ This was an experiment with nix/c++ and opencv. I wanted to see if nix could be 
 
 ## Libraries
 
-The libraries are added via nix packages housed inside the `libraries` folder. Currently the only library being used is `httplib`. NOTE: When adding new libraries the nix package for each respective library must be added to the packages declaration inside `default.nix` and `shell.nix`. Adding it to `shell.nix` will add it to the develop environment which is kinda useful.
+The libraries are added via nix packages housed inside the `libraries` folder. The libraries folder current has three libraries residing in it. `Pytorch` and `httplib`, while `spdlog` is included it is not integrated with the main `flake.nix` file. (Due to some compile errors) The reasoning behind using nix for dependencies instead of the countless other package managers for c++ or any other language. Is reliability and cross-compliation, by building the source code for each library we can avoid the massive headache of sourcing binanaries and dependencies for libraries when deploying to arm based systems.
 
 ## Building & Running
 
 First, because nix is awesome you don't need to download anything (except for nix). After cloning the repo make sure you have [nix flakes enabled](https://nixos.wiki/wiki/Flakes). Then execute this command `nix run` it will take some time. But when its finished the camera server will be running on `http://localhost:8080/hi`!
+
+There are three main nix commands that you will need to know to develop with nix. It's the `run`, `build`, `develop` commands prefixed with `nix` like so: `nix develop` or `nix run`. Now for the next question what do all three really do?
+
+#### `nix build`
+
+It will compile the project according to the nix configuration files like `flake.nix` or and other `.nix` file. CMake is used for building the raw executable, but nix manages the steps and environment that cmake receives to build the binaries in. When its completed a new folder named `result` will be available with the compiled binary ready.
+
+#### `nix run`
+
+Will do everything in `nix build` and execute the binary when its finished building.
+
+#### `nix develop`
+
+It will compile the devshell which is a custom development environment with all the libraries and headers necessary to develop this project. Its nice when executed you have a full fledged dev environment without any configuration necessary as a new developer. 
 
 ## Debugging
 
@@ -28,4 +42,4 @@ valgrind --leak-check=yes ./result/bin/teleop-control
 ```
 
 ## Developing on WSL
-Write something saying how wsl is not plug and play for this project
+Write something saying how wsl is not plug and play for this project and that native linux is much easier to configure.
