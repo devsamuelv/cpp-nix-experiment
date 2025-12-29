@@ -65,7 +65,7 @@ public:
     torch::jit::Module model;
 
     const std::string path = "/home/samuel/code/cpp-nix-experiment/"
-                             "model.pt";
+                             "best.torchscript";
     model = torch::jit::load(path);
 
     // Enable pytorch inference
