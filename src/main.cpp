@@ -1,15 +1,13 @@
+#include "driving/navigation_thread.hpp"
 #include "video/inference_thread.hpp"
 #include "video/video_manager.hpp"
 #include <ATen/ATen.h>
-#include <algorithm>
-#include <chrono>
 #include <csignal>
 #include <cv_bridge/cv_bridge.h>
 #include <format>
 #include <functional>
 #include <httplib.h>
 #include <iostream>
-#include <mutex>
 #include <opencv4/opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <spdlog/spdlog.h>
@@ -53,6 +51,8 @@ int main(int argc, char *argv[]) {
 
   std::thread cameraThread(&InferenceThread::camera_thread, std::ref(capture),
                            std::ref(manager), std::ref(node));
+
+  std::thread navigationThread(&NavigationThread::navigate);
 
   // Handel term signals
   signal(SIGTERM, signal_handler);
